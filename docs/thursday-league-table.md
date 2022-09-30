@@ -1,5 +1,5 @@
 ---
-title: Rules
+title: Table
 slug: thursday-league-table
 ---
 
