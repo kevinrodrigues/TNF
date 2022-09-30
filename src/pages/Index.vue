@@ -21,6 +21,7 @@ query {
 
 <script>
 import Shortcut from '~/components/Shortcut.vue'
+import LogRocket from 'logrocket';
 
 export default {
   components: {
@@ -30,6 +31,9 @@ export default {
     return {
       description: 'Welcome to Thursday Night Football'
     }
+  },
+  mounted () {
+    LogRocket.init('stmphc/tnf');
   },
   metaInfo() {
     return {
