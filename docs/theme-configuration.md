@@ -3,7 +3,7 @@ title: Rules
 slug: thursday-night-rules
 ---
 
-## Basic Rules
+## Rules
 
 1. The overall league winner is decided by whoever is top on
    AVERAGE points at the end of the season

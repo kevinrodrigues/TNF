@@ -22,8 +22,17 @@
       "section": "Table",
       "topics": [
         {
-          "title": "League Table",
+          "title": "Table",
           "slug": "thursday-league-table"
+        }
+      ]
+    },
+    {
+      "section": "Kitty",
+      "topics": [
+        {
+          "title": "Kitty",
+          "slug": "kitty"
         }
       ]
     }
