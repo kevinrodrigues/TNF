@@ -1,0 +1,122 @@
+@import 'prism';
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Source Sans Pro', sans-serif;
+  margin: 0;
+  padding: 0;
+  line-height: 1.7;
+  transition: background .15s ease-in-out, color .15s ease-in-out;
+
+  &::before {
+    display: none;
+    visibility: hidden;
+    content: 'small';
+
+    @include respond-above(sm) {
+      content: 'large'
+    }
+  }
+
+  &.bright {
+    background: $backgroundBright;
+    color: $textBright;
+  }
+
+  &.dark {
+    background: $backgroundDark;
+    color: $textDark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h1 {
+  margin-top: 0;
+
+  @include respond-above(md) {
+    font-size: 4rem;
+  }
+}
+
+a {
+  color: $brandPrimary;
+}
+
+.github {
+  padding: 10px;
+  text-align: center;
+}
+
+table, th, td {
+  border: 1px solid #333;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+iframe {
+  border: none;
+  margin: 30px auto;
+}
+
+table {
+  width: 100%;
+
+  @media (max-width: 480px) {
+    th:nth-child(6) {
+      display: none;
+    }
+
+    th:nth-child(7) {
+      display: none;
+    }
+
+    th:nth-child(8) {
+      display: none;
+    }
+
+    th:nth-child(9) {
+      display: none;
+    }
+
+    tbody {
+      td:nth-child(6) {
+        display: none;
+      }
+      td:nth-child(7) {
+        display: none;
+      }
+
+      td:nth-child(8) {
+        display: none;
+      }
+
+      td:nth-child(9) {
+        display: none;
+      }
+    }
+  }
+
+  tbody {
+    tr:first-child {
+      background-color: #10c186;
+    }
+  }
+}
+
+tr {
+  text-align: left;
+}

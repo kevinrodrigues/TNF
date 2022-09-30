@@ -1,0 +1,31 @@
+{
+  "sidebar": [
+    {
+      "section": "General",
+      "topics": [
+        {
+          "title": "Contact Admins",
+          "slug": "admins"
+        }
+      ]
+    },
+    {
+      "section": "Rules",
+      "topics": [
+        {
+          "title": "Thursday Night Rules",
+          "slug": "thursday-night-rules"
+        }
+      ]
+    },
+    {
+      "section": "Table",
+      "topics": [
+        {
+          "title": "League Table",
+          "slug": "thursday-league-table"
+        }
+      ]
+    }
+  ]
+}
