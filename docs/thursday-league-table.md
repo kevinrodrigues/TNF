@@ -28,3 +28,8 @@ Nav|1|0|0|1|0|0|0|0|0|0|1|1
 Game 1: Vijay & Sam 🏆
 
 
+## Game 1 score
+
+6-2 Reds
+
+
