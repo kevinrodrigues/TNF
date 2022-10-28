@@ -41,7 +41,7 @@ Senthil|1|0|0|1|0|0|0|0|0|0|1|1
 Game 4: Sat 🏆
 
 
-## Game 3 score
+## Game 4 score
 
 1-5 - Blacks
 
