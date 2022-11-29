@@ -16,7 +16,8 @@ slug: thursday-night-rules
 5. Captain who has second pick will decide which way to shoot.
 6. Any player who plays all 10 games will receive + 3 loyalty
    bonus.
-
+7. Everyone has to be on the pitch for 9:00pm (9:01 is considered late). A flat fine
+of £4.50 is payable if you are late! Everyone pays to play so it's only fair you are not wasting other peoples time and money!
 
 ## TNF Prizes
 1. Highest average wins football top of their choice
