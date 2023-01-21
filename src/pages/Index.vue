@@ -5,6 +5,7 @@
       <nav>
         <Shortcut link="/thursday-league-table" text="Table" icon="play-icon" />
         <Shortcut link="/thursday-night-rules" text="Rules" icon="eye-icon" />
+        <Shortcut link="/previous-seasons" text="Previous Seasons" icon="play-icon" />
       </nav>
       <iframe src="https://ghbtns.com/github-btn.html?user=kevinrodrigues&type=follow&count=false" width="165" height="30" title="GitHub"></iframe>
     </div>
