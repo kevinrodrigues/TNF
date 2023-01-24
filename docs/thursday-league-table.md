@@ -31,7 +31,7 @@ Slax|1|0|0|1|0|0|0|0|0|0|0|1|1
 Game 2: Sat 🏆
 
 
-## Game 1 score
+## Game 2 score
 
 REDs 🔴 9 - 6 BLACKs ⚫️️
 
