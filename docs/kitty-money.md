@@ -3,6 +3,6 @@ title: Kitty
 slug: kitty
 ---
 
-💰 Total (including fines): 160.93
+💰 Total (including fines): 172.43
 
 
