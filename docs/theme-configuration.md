@@ -11,7 +11,7 @@ slug: thursday-night-rules
    during the season
 3. Each week, 2 captains will pick teams. The league’s top 2
    players (on points) will be captains.
-4. Captain with the highest points gets choice of first or second pick (The person picking second gets choice of two picks). If points are
+4. Captain with the highest points gets choice of first or second pick (Note: The person picking second gets two picks). If points are
    tied, whichever captain called in first will have first pick.
 5. Captain who has second pick will decide which way to shoot.
 6. Any player who plays all 10 games will receive + 3 loyalty
