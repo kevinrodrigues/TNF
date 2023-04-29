@@ -37,7 +37,7 @@ Av|1|0|0|1|0|0|0|0|0|0|0|1|1
 
 ## MOM 
 
-Game 6: Vijay J 🏆
+Game 6: Vijay A 🏆
 
 
 ## Score
