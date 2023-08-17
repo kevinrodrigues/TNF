@@ -137,7 +137,7 @@ Av|1|0|0|1|0|0|0|0|0|0|0|1|1
 2. Kevin & Sat based on next highest points available: 34 (joint).
 
 
-## League Table - Season 4
+## League winners for Season Four
 
 **Player**|**P**|**W**|**D**|**L**|**PS**|**DO**|**Loy**|**Late**|**Vs**|**MoM**|**MoMS**|**Tot**|**Ave**
 :-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:
