@@ -4,7 +4,8 @@
   "scripts": {
     "build": "gridsome build",
     "develop": "gridsome develop",
-    "explore": "gridsome explore"
+    "explore": "gridsome explore",
+    "table": "node scripts/update-table.js"
   },
   "dependencies": {
     "@gridsome/plugin-google-analytics": "^0.1.0",
@@ -25,12 +26,15 @@
     "websocket-extensions": "^0.1.4"
   },
   "devDependencies": {
-    "node-sass": "^4.0.1",
-    "sass-loader": "^7.1.0",
+    "sass": "^1.56.0",
+    "sass-loader": "^10.4.1",
     "style-resources-loader": "^1.2.1"
   },
+  "resolutions": {
+    "sharp": "^0.32.0"
+  },
   "volta": {
-    "node": "16.0.0",
-    "yarn": "1.19.2"
+    "node": "20.20.0",
+    "yarn": "1.22.22"
   }
 }

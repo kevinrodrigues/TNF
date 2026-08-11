@@ -33,11 +33,11 @@ export default {
 
 
 <style lang="scss" scoped>
-/deep/ > p {
+::v-deep > p {
   opacity: .8;
 }
 
-/deep/ > h2, /deep/ > h3, /deep/ > h4, /deep/ > h5, /deep/ > h6 {
+::v-deep > h2, ::v-deep > h3, ::v-deep > h4, ::v-deep > h5, ::v-deep > h6 {
   padding-top: 100px;
   margin-top: -80px;
 
@@ -46,7 +46,7 @@ export default {
   }
 }
 
-/deep/ > p > img {
+::v-deep > p > img {
     max-width: 100%;
   }
 
