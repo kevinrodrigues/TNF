@@ -104,7 +104,8 @@
       </div>
 
       <p v-if="!voterName.trim() && submitAttempted" class="error-msg">Please enter your name.</p>
-      <p v-if="voterName.trim() && !selected && submitAttempted" class="error-msg">Please pick a player.</p>
+      <p v-if="voterName.trim() && !matchesPlayer(voterName) && submitAttempted" class="error-msg">Your name doesn't match any player in this week's game. Check your spelling.</p>
+      <p v-if="voterName.trim() && matchesPlayer(voterName) && !selected && submitAttempted" class="error-msg">Please pick a player.</p>
       <p v-if="voteError" class="error-msg">{{ voteError }}</p>
 
       <button
@@ -124,6 +125,38 @@ import { getVoteCount } from '../lib/supabase'
 import nextGame from '../../data/next-game.json'
 
 const players = nextGame.map(name => ({ name }))
+
+function norm(str) {
+  return str.toLowerCase().trim()
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length
+  const dp = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)
+  )
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+    }
+  }
+  return dp[m][n]
+}
+
+function matchesPlayer(input) {
+  const inp = norm(input)
+  if (inp.length < 2) return false
+  return nextGame.some(name => {
+    const p = norm(name)
+    if (inp === p) return true
+    if (inp.length >= 3 && p.startsWith(inp)) return true
+    if (p.length >= 3 && inp.startsWith(p)) return true
+    if (inp.length >= 4 && p.length >= 4 && levenshtein(inp, p) <= 1) return true
+    return false
+  })
+}
 
 const MAX_VOTERS   = 14
 const SESSION_KEY  = 'tnf_vote_session'
@@ -182,6 +215,8 @@ export default {
   },
 
   methods: {
+    matchesPlayer(name) { return matchesPlayer(name) },
+
     async sendCode() {
       this.sending   = true
       this.authError = null
@@ -236,6 +271,7 @@ export default {
     async castVote() {
       this.submitAttempted = true
       if (!this.voterName.trim() || !this.selected) return
+      if (!matchesPlayer(this.voterName)) return
       this.submitting = true
       this.voteError  = null
       try {
