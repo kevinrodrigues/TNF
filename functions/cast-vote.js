@@ -12,8 +12,8 @@ function dbHeaders() {
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405 }
 
-  let email, voteToken, candidate
-  try { ({ email, voteToken, candidate } = JSON.parse(event.body || '{}')) } catch (_) {}
+  let email, voteToken, candidate, voterName
+  try { ({ email, voteToken, candidate, voterName } = JSON.parse(event.body || '{}')) } catch (_) {}
   if (!email || !voteToken || !candidate) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing fields' }) }
   }
@@ -34,7 +34,7 @@ exports.handler = async (event) => {
   const insertRes = await fetch(SUPABASE_URL + '/rest/v1/votes', {
     method: 'POST',
     headers: Object.assign(dbHeaders(), { Prefer: 'return=minimal' }),
-    body: JSON.stringify({ voter_email: email, candidate }),
+    body: JSON.stringify({ voter_email: email, voter_name: voterName || null, candidate }),
   })
 
   if (insertRes.status === 409 || insertRes.status === 400) {

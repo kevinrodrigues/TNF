@@ -17,7 +17,7 @@ exports.handler = async () => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfiguration.' }) }
   }
 
-  const res = await fetch(`${url}/rest/v1/votes?select=candidate,voter_email`, {
+  const res = await fetch(`${url}/rest/v1/votes?select=candidate,voter_name,voter_email`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` },
   })
 
@@ -29,10 +29,11 @@ exports.handler = async () => {
 
   // Group by candidate
   const tally = {}
-  for (const { candidate, voter_email } of rows) {
+  for (const { candidate, voter_name, voter_email } of rows) {
     if (!tally[candidate]) tally[candidate] = { votes: 0, voters: [] }
     tally[candidate].votes++
-    if (voter_email) tally[candidate].voters.push(voter_email)
+    const display = voter_name || (voter_email ? voter_email.split('@')[0] : 'unknown')
+    tally[candidate].voters.push(display)
   }
 
   const results = Object.entries(tally)

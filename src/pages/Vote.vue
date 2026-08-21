@@ -79,6 +79,17 @@
       <h2>Who gets your vote?</h2>
       <p class="vote-sub">Pick one player. You cannot change your vote once submitted.</p>
 
+      <label class="field-label" for="voterName">Your name</label>
+      <input
+        id="voterName"
+        v-model="voterName"
+        type="text"
+        class="field-input name-input"
+        placeholder="e.g. Kevin"
+        required
+        autocomplete="given-name"
+      />
+
       <div class="player-grid">
         <button
           v-for="player in players"
@@ -92,11 +103,13 @@
         </button>
       </div>
 
+      <p v-if="!voterName.trim() && submitAttempted" class="error-msg">Please enter your name.</p>
+      <p v-if="voterName.trim() && !selected && submitAttempted" class="error-msg">Please pick a player.</p>
       <p v-if="voteError" class="error-msg">{{ voteError }}</p>
 
       <button
         class="btn-primary"
-        :disabled="!selected || submitting"
+        :disabled="submitting"
         @click="castVote"
       >
         {{ submitting ? 'Submitting…' : 'Submit vote' }}
@@ -130,8 +143,10 @@ export default {
       authError: null,
       codeError: null,
       voteToken: null,
+      voterName: '',
       selected: null,
       submitting: false,
+      submitAttempted: false,
       voteError: null,
       players,
       maxVoters: MAX_VOTERS,
@@ -219,7 +234,8 @@ export default {
     },
 
     async castVote() {
-      if (!this.selected) return
+      this.submitAttempted = true
+      if (!this.voterName.trim() || !this.selected) return
       this.submitting = true
       this.voteError  = null
       try {
@@ -232,6 +248,7 @@ export default {
           body: JSON.stringify({
             email: this.email,
             voteToken: this.voteToken,
+            voterName: this.voterName.trim(),
             candidate: this.selected,
           }),
         })
@@ -253,8 +270,10 @@ export default {
       this.code      = ''
       this.authError = null
       this.codeError = null
-      this.voteToken = null
-      this.selected  = null
+      this.voteToken       = null
+      this.voterName       = ''
+      this.selected        = null
+      this.submitAttempted = false
     },
   },
 }
@@ -313,6 +332,11 @@ p { opacity: .85; }
   font-family: inherit;
 
   &:focus { outline: 2px solid $brandPrimary; border-color: transparent; }
+}
+
+.name-input {
+  max-width: 260px;
+  margin-bottom: 28px;
 }
 
 .code-input {
