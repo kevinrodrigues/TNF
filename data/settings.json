@@ -42,6 +42,10 @@
         {
           "title": "Vote",
           "slug": "vote"
+        },
+        {
+          "title": "Results",
+          "slug": "vote-results"
         }
       ]
     }

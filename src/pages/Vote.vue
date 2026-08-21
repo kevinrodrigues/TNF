@@ -2,24 +2,22 @@
   <Layout>
     <h1>Vote</h1>
 
-    <!-- Loading session -->
     <div v-if="step === 'loading'" class="card">
       <p>Loading…</p>
     </div>
 
-    <!-- Magic link sent -->
-    <div v-else-if="step === 'sent'" class="card">
-      <div class="icon">📧</div>
-      <h2>Check your email</h2>
-      <p>A login link has been sent to <strong>{{ email }}</strong>. Click it to continue to the vote.</p>
-      <button class="btn-ghost" @click="reset">Use a different email</button>
+    <!-- Voting closed -->
+    <div v-else-if="step === 'closed'" class="card">
+      <div class="icon">🔒</div>
+      <h2>Voting is closed</h2>
+      <p>All {{ maxVoters }} votes have been cast. Results will be revealed soon.</p>
     </div>
 
-    <!-- Email entry -->
+    <!-- Step 1: enter email -->
     <div v-else-if="step === 'email'" class="card">
       <h2>Sign in to vote</h2>
-      <p>Enter your email and we'll send you a one-time login link — no password needed.</p>
-      <form @submit.prevent="sendLink">
+      <p>Enter your email and we'll send you a 6-digit code — no password needed.</p>
+      <form @submit.prevent="sendCode">
         <label class="field-label" for="email">Email address</label>
         <input
           id="email"
@@ -32,8 +30,35 @@
         />
         <p v-if="authError" class="error-msg">{{ authError }}</p>
         <button type="submit" class="btn-primary" :disabled="sending">
-          {{ sending ? 'Sending…' : 'Send login link' }}
+          {{ sending ? 'Sending…' : 'Send code' }}
         </button>
+      </form>
+    </div>
+
+    <!-- Step 2: enter code -->
+    <div v-else-if="step === 'verify'" class="card">
+      <div class="icon">📬</div>
+      <h2>Enter your code</h2>
+      <p>We sent a 6-digit code to <strong>{{ email }}</strong>.</p>
+      <form @submit.prevent="checkCode">
+        <label class="field-label" for="code">6-digit code</label>
+        <input
+          id="code"
+          v-model="code"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          class="field-input code-input"
+          placeholder="000000"
+          required
+          autocomplete="one-time-code"
+        />
+        <p v-if="codeError" class="error-msg">{{ codeError }}</p>
+        <button type="submit" class="btn-primary" :disabled="verifying || code.length !== 6">
+          {{ verifying ? 'Verifying…' : 'Continue' }}
+        </button>
+        <button type="button" class="btn-ghost block" @click="reset">Use a different email</button>
       </form>
     </div>
 
@@ -44,7 +69,7 @@
       <p>Your vote has been cast. Results will be revealed when voting closes.</p>
     </div>
 
-    <!-- Pick a player -->
+    <!-- Step 3: pick a player -->
     <div v-else-if="step === 'vote'">
       <p class="vote-meta">
         Signed in as <strong>{{ userEmail }}</strong>
@@ -83,16 +108,19 @@
 
 <script>
 import {
-  sendMagicLink,
-  getUserFromToken,
-  parseSessionFromHash,
+  sendOtp,
+  verifyOtp,
   saveSession,
   loadSession,
   clearSession,
+  getUserFromToken,
+  getVoteCount,
   hasVoted,
   submitVote,
 } from '../lib/supabase'
 import players from '../../data/league-table.json'
+
+const MAX_VOTERS = 14
 
 export default {
   metaInfo: { title: 'Vote' },
@@ -101,8 +129,11 @@ export default {
     return {
       step: 'loading',
       email: '',
+      code: '',
       sending: false,
+      verifying: false,
       authError: null,
+      codeError: null,
       userEmail: null,
       userId: null,
       session: null,
@@ -110,25 +141,24 @@ export default {
       submitting: false,
       voteError: null,
       players,
+      maxVoters: MAX_VOTERS,
     }
   },
 
   async mounted() {
-    // 1. Check for magic link hash in URL first
-    const fromHash = parseSessionFromHash()
-    if (fromHash) {
-      saveSession(fromHash)
-      this.session = fromHash
-    } else {
-      this.session = loadSession()
+    const count = await getVoteCount()
+    if (count >= MAX_VOTERS) {
+      this.step = 'closed'
+      return
     }
+
+    this.session = loadSession()
 
     if (!this.session) {
       this.step = 'email'
       return
     }
 
-    // 2. Get user details from the token
     const user = await getUserFromToken(this.session.accessToken)
     if (!user) {
       clearSession()
@@ -139,22 +169,40 @@ export default {
     this.userId = user.id
     this.userEmail = user.email
 
-    // 3. Check if already voted
     const voted = await hasVoted(this.session.accessToken, user.id)
     this.step = voted ? 'done' : 'vote'
   },
 
   methods: {
-    async sendLink() {
+    async sendCode() {
       this.sending = true
       this.authError = null
       try {
-        await sendMagicLink(this.email, window.location.href)
-        this.step = 'sent'
+        await sendOtp(this.email)
+        this.step = 'verify'
       } catch (err) {
         this.authError = err.message
       } finally {
         this.sending = false
+      }
+    },
+
+    async checkCode() {
+      this.verifying = true
+      this.codeError = null
+      try {
+        const session = await verifyOtp(this.email, this.code)
+        saveSession(session)
+        this.session = session
+        this.userId = session.user.id
+        this.userEmail = session.user.email
+
+        const voted = await hasVoted(session.accessToken, session.user.id)
+        this.step = voted ? 'done' : 'vote'
+      } catch (err) {
+        this.codeError = err.message || 'Invalid or expired code. Try requesting a new one.'
+      } finally {
+        this.verifying = false
       }
     },
 
@@ -163,7 +211,18 @@ export default {
       this.submitting = true
       this.voteError = null
       try {
-        const result = await submitVote(this.session.accessToken, this.userId, this.selected)
+        const count = await getVoteCount()
+        if (count >= MAX_VOTERS) {
+          this.step = 'closed'
+          return
+        }
+
+        const result = await submitVote(
+          this.session.accessToken,
+          this.userId,
+          this.userEmail,
+          this.selected
+        )
         if (result.alreadyVoted || result.success) {
           this.step = 'done'
         }
@@ -182,7 +241,9 @@ export default {
     reset() {
       this.step = 'email'
       this.email = ''
+      this.code = ''
       this.authError = null
+      this.codeError = null
       this.selected = null
       this.session = null
     },
@@ -251,6 +312,13 @@ p { opacity: .85; }
   &:focus { outline: 2px solid $brandPrimary; border-color: transparent; }
 }
 
+.code-input {
+  font-size: 1.8rem;
+  letter-spacing: .3em;
+  text-align: center;
+  font-weight: 700;
+}
+
 .btn-primary {
   display: inline-block;
   padding: 12px 28px;
@@ -279,6 +347,7 @@ p { opacity: .85; }
   text-decoration: underline;
 
   &.inline { font-size: inherit; }
+  &.block { display: block; margin-top: 14px; }
 }
 
 .player-grid {
