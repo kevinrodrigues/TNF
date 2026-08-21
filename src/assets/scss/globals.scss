@@ -75,41 +75,6 @@ iframe {
 table {
   width: 100%;
 
-  @media (max-width: 480px) {
-    th:nth-child(6) {
-      display: none;
-    }
-
-    th:nth-child(7) {
-      display: none;
-    }
-
-    th:nth-child(8) {
-      display: none;
-    }
-
-    th:nth-child(9) {
-      display: none;
-    }
-
-    tbody {
-      td:nth-child(6) {
-        display: none;
-      }
-      td:nth-child(7) {
-        display: none;
-      }
-
-      td:nth-child(8) {
-        display: none;
-      }
-
-      td:nth-child(9) {
-        display: none;
-      }
-    }
-  }
-
   tbody {
     tr:first-child {
       background-color: #10c186;

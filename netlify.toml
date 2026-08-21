@@ -1,2 +1,7 @@
+[build]
+  command   = "gridsome build"
+  publish   = "dist"
+  functions = "functions"
+
 [build.environment]
   NODE_VERSION = "20"

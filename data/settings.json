@@ -35,6 +35,15 @@
           "slug": "kitty"
         }
       ]
+    },
+    {
+      "section": "Vote",
+      "topics": [
+        {
+          "title": "Vote",
+          "slug": "vote"
+        }
+      ]
     }
   ]
 }
