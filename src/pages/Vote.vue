@@ -108,7 +108,9 @@
 
 <script>
 import { getVoteCount } from '../lib/supabase'
-import players from '../../data/league-table.json'
+import nextGame from '../../data/next-game.json'
+
+const players = nextGame.map(name => ({ name }))
 
 const MAX_VOTERS   = 14
 const SESSION_KEY  = 'tnf_vote_session'
