@@ -114,6 +114,8 @@ const players = nextGame.map(name => ({ name }))
 
 const MAX_VOTERS   = 14
 const SESSION_KEY  = 'tnf_vote_session'
+const VOTED_KEY    = 'tnf_voted'
+const VOTED_TTL    = 5 * 24 * 60 * 60 * 1000 // 5 days
 
 export default {
   metaInfo: { title: 'Vote' },
@@ -139,6 +141,12 @@ export default {
   async mounted() {
     const count = await getVoteCount()
     if (count >= MAX_VOTERS) { this.step = 'closed'; return }
+
+    // Check if this device already voted this week
+    try {
+      const v = JSON.parse(localStorage.getItem(VOTED_KEY) || 'null')
+      if (v && v.expiresAt > Date.now()) { this.step = 'done'; return }
+    } catch (_) {}
 
     // Restore session from localStorage if still valid
     try {
@@ -229,6 +237,7 @@ export default {
         })
         const data = await res.json()
         if (!res.ok && !data.alreadyVoted) throw new Error(data.error || 'Failed to submit')
+        try { localStorage.setItem(VOTED_KEY, JSON.stringify({ expiresAt: Date.now() + VOTED_TTL })) } catch (_) {}
         this.step = 'done'
       } catch (err) {
         this.voteError = err.message || 'Something went wrong, please try again.'
@@ -238,7 +247,7 @@ export default {
     },
 
     reset() {
-      try { localStorage.removeItem(SESSION_KEY) } catch (_) {}
+      try { localStorage.removeItem(SESSION_KEY); localStorage.removeItem(VOTED_KEY) } catch (_) {}
       this.step      = 'email'
       this.email     = ''
       this.code      = ''
