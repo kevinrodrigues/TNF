@@ -16,7 +16,7 @@
     <!-- Step 1: enter email -->
     <div v-else-if="step === 'email'" class="card">
       <h2>Sign in to vote</h2>
-      <p>Enter your email and we'll send you a 6-digit code — no password needed.</p>
+      <p>Enter your email and we'll send you a 6-digit code.</p>
       <form @submit.prevent="sendCode">
         <label class="field-label" for="email">Email address</label>
         <input
@@ -40,7 +40,7 @@
       <div class="icon">📬</div>
       <h2>Enter your code</h2>
       <p>We sent a 6-digit code to <strong>{{ email }}</strong>.</p>
-      <form @submit.prevent="checkCode">
+      <form @submit.prevent="verifyCode">
         <label class="field-label" for="code">6-digit code</label>
         <input
           id="code"
@@ -72,9 +72,9 @@
     <!-- Step 3: pick a player -->
     <div v-else-if="step === 'vote'">
       <p class="vote-meta">
-        Signed in as <strong>{{ userEmail }}</strong>
+        Signed in as <strong>{{ email }}</strong>
         &nbsp;·&nbsp;
-        <button class="btn-ghost inline" @click="signOut">Sign out</button>
+        <button class="btn-ghost inline" @click="reset">Sign out</button>
       </p>
       <h2>Who gets your vote?</h2>
       <p class="vote-sub">Pick one player. You cannot change your vote once submitted.</p>
@@ -107,20 +107,11 @@
 </template>
 
 <script>
-import {
-  sendOtp,
-  verifyOtp,
-  saveSession,
-  loadSession,
-  clearSession,
-  getUserFromToken,
-  getVoteCount,
-  hasVoted,
-  submitVote,
-} from '../lib/supabase'
+import { getVoteCount } from '../lib/supabase'
 import players from '../../data/league-table.json'
 
-const MAX_VOTERS = 14
+const MAX_VOTERS   = 14
+const SESSION_KEY  = 'tnf_vote_session'
 
 export default {
   metaInfo: { title: 'Vote' },
@@ -134,9 +125,7 @@ export default {
       verifying: false,
       authError: null,
       codeError: null,
-      userEmail: null,
-      userId: null,
-      session: null,
+      voteToken: null,
       selected: null,
       submitting: false,
       voteError: null,
@@ -147,38 +136,38 @@ export default {
 
   async mounted() {
     const count = await getVoteCount()
-    if (count >= MAX_VOTERS) {
-      this.step = 'closed'
-      return
-    }
+    if (count >= MAX_VOTERS) { this.step = 'closed'; return }
 
-    this.session = loadSession()
+    // Restore session from localStorage if still valid
+    try {
+      const raw = localStorage.getItem(SESSION_KEY)
+      if (raw) {
+        const s = JSON.parse(raw)
+        if (s.expiresAt > Date.now()) {
+          this.email     = s.email
+          this.voteToken = s.voteToken
+          this.step      = s.hasVoted ? 'done' : 'vote'
+          return
+        }
+        localStorage.removeItem(SESSION_KEY)
+      }
+    } catch (_) {}
 
-    if (!this.session) {
-      this.step = 'email'
-      return
-    }
-
-    const user = await getUserFromToken(this.session.accessToken)
-    if (!user) {
-      clearSession()
-      this.step = 'email'
-      return
-    }
-
-    this.userId = user.id
-    this.userEmail = user.email
-
-    const voted = await hasVoted(this.session.accessToken, user.id)
-    this.step = voted ? 'done' : 'vote'
+    this.step = 'email'
   },
 
   methods: {
     async sendCode() {
-      this.sending = true
+      this.sending   = true
       this.authError = null
       try {
-        await sendOtp(this.email)
+        const res = await fetch('/.netlify/functions/send-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: this.email }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to send code')
         this.step = 'verify'
       } catch (err) {
         this.authError = err.message
@@ -187,20 +176,33 @@ export default {
       }
     },
 
-    async checkCode() {
+    async verifyCode() {
       this.verifying = true
       this.codeError = null
       try {
-        const session = await verifyOtp(this.email, this.code)
-        saveSession(session)
-        this.session = session
-        this.userId = session.user.id
-        this.userEmail = session.user.email
+        const res = await fetch('/.netlify/functions/verify-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: this.email, code: this.code }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Invalid code')
 
-        const voted = await hasVoted(session.accessToken, session.user.id)
-        this.step = voted ? 'done' : 'vote'
+        this.voteToken = data.voteToken
+
+        // Persist session for 1 hour
+        try {
+          localStorage.setItem(SESSION_KEY, JSON.stringify({
+            email: this.email,
+            voteToken: data.voteToken,
+            hasVoted: data.hasVoted,
+            expiresAt: Date.now() + 60 * 60 * 1000,
+          }))
+        } catch (_) {}
+
+        this.step = data.hasVoted ? 'done' : 'vote'
       } catch (err) {
-        this.codeError = err.message || 'Invalid or expired code. Try requesting a new one.'
+        this.codeError = err.message
       } finally {
         this.verifying = false
       }
@@ -209,43 +211,39 @@ export default {
     async castVote() {
       if (!this.selected) return
       this.submitting = true
-      this.voteError = null
+      this.voteError  = null
       try {
         const count = await getVoteCount()
-        if (count >= MAX_VOTERS) {
-          this.step = 'closed'
-          return
-        }
+        if (count >= MAX_VOTERS) { this.step = 'closed'; return }
 
-        const result = await submitVote(
-          this.session.accessToken,
-          this.userId,
-          this.userEmail,
-          this.selected
-        )
-        if (result.alreadyVoted || result.success) {
-          this.step = 'done'
-        }
+        const res = await fetch('/.netlify/functions/cast-vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: this.email,
+            voteToken: this.voteToken,
+            candidate: this.selected,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok && !data.alreadyVoted) throw new Error(data.error || 'Failed to submit')
+        this.step = 'done'
       } catch (err) {
-        this.voteError = 'Something went wrong, please try again.'
+        this.voteError = err.message || 'Something went wrong, please try again.'
       } finally {
         this.submitting = false
       }
     },
 
-    signOut() {
-      clearSession()
-      this.reset()
-    },
-
     reset() {
-      this.step = 'email'
-      this.email = ''
-      this.code = ''
+      try { localStorage.removeItem(SESSION_KEY) } catch (_) {}
+      this.step      = 'email'
+      this.email     = ''
+      this.code      = ''
       this.authError = null
       this.codeError = null
-      this.selected = null
-      this.session = null
+      this.voteToken = null
+      this.selected  = null
     },
   },
 }
@@ -262,10 +260,7 @@ export default {
   .dark  & { background: $sidebarDark; }
 }
 
-.icon {
-  font-size: 2.5rem;
-  margin-bottom: 12px;
-}
+.icon { font-size: 2.5rem; margin-bottom: 12px; }
 
 h2 {
   margin: 0 0 10px;
@@ -276,10 +271,7 @@ h2 {
 
 p { opacity: .85; }
 
-.vote-meta {
-  font-size: .875rem;
-  margin-bottom: 24px;
-}
+.vote-meta { font-size: .875rem; margin-bottom: 24px; }
 
 .vote-sub {
   font-size: .875rem;
@@ -313,8 +305,8 @@ p { opacity: .85; }
 }
 
 .code-input {
-  font-size: 1.8rem;
-  letter-spacing: .3em;
+  font-size: 2rem;
+  letter-spacing: .4em;
   text-align: center;
   font-weight: 700;
 }
@@ -347,7 +339,7 @@ p { opacity: .85; }
   text-decoration: underline;
 
   &.inline { font-size: inherit; }
-  &.block { display: block; margin-top: 14px; }
+  &.block  { display: block; margin-top: 14px; }
 }
 
 .player-grid {
@@ -372,12 +364,8 @@ p { opacity: .85; }
   .bright & { background: #f3f4f5; color: $textBright; }
   .dark  & { background: $sidebarDark; color: $textDark; }
 
-  &.selected {
-    border-color: $brandPrimary;
-    background: rgba(16, 193, 134, .12);
-  }
-
-  &:not(.selected):hover { border-color: rgba(16, 193, 134, .4); }
+  &.selected { border-color: $brandPrimary; background: rgba(16,193,134,.12); }
+  &:not(.selected):hover { border-color: rgba(16,193,134,.4); }
 }
 
 .tick {
@@ -388,9 +376,5 @@ p { opacity: .85; }
   font-weight: 700;
 }
 
-.error-msg {
-  color: #e74c3c;
-  font-size: .875rem;
-  margin: 0 0 12px;
-}
+.error-msg { color: #e74c3c; font-size: .875rem; margin: 0 0 12px; }
 </style>
